@@ -23,7 +23,7 @@ async def api_privat (days):
             return ex_rates
 
 
-def parse_currency_data(data):
+async def parse_currency_data(data):
     currency_data = json.loads(data)
     eur = {'EUR': {'sale': None, 'purchase': None}}
     usd = {'USD': {'sale': None, 'purchase': None}}
@@ -39,11 +39,11 @@ def parse_currency_data(data):
     return {**eur, **usd}
 
 
-def print_currency_rates(ex_rates):
+async def print_currency_rates(ex_rates):
     print (json.dumps(ex_rates, indent=2, ensure_ascii=False))
     
 
-def sample_exchange_rates(days):
+async def sample_exchange_rates(days):
     loop = asyncio.get_event_loop()
     ex_rates = loop.run_until_complete(api_privat(days))
     print_currency_rates(ex_rates)
