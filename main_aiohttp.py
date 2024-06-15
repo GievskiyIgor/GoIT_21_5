@@ -2,8 +2,9 @@ import aiohttp
 import asyncio
 import json
 import argparse
-import httpx
+# import httpx
 from datetime import datetime, timedelta
+
 
 
 async def api_privat (days):
@@ -16,15 +17,21 @@ async def api_privat (days):
             date = (datetime.now()-timedelta(days=i)).strftime('%d.%m.%Y')
             url = f'https://api.privatbank.ua/p24api/exchange_rates?json&date={date}'
             
-            async with client_session.get(url) as response:
-                data = await response.text()
-                ex_rates.append({date:parse_currency_data(data)})
+            try:
+                async with client_session.get(url) as response:
+                    data = await response.text()
+                    ex_rates.append({date: await parse_currency_data(data)})
+            except aiohttp.ClientError as e:
+                print(f'Error fetching data for {date}: {e}')
+            except json.JSONDecodeError as e:
+                print(f'Error parsing JSON for {date}: {e}')
             
-            return ex_rates
+        return ex_rates
 
 
 async def parse_currency_data(data):
     currency_data = json.loads(data)
+   
     eur = {'EUR': {'sale': None, 'purchase': None}}
     usd = {'USD': {'sale': None, 'purchase': None}}
     
@@ -39,13 +46,19 @@ async def parse_currency_data(data):
     return {**eur, **usd}
 
 
-async def print_currency_rates(ex_rates):
+def print_currency_rates(ex_rates):
     print (json.dumps(ex_rates, indent=2, ensure_ascii=False))
     
 
 async def sample_exchange_rates(days):
-    loop = asyncio.get_event_loop()
-    ex_rates = loop.run_until_complete(api_privat(days))
+    # loop = asyncio.get_event_loop()
+    # ex_rates = loop.run_until_complete(api_privat(days))
+   
+    if days > 10:
+        print("Error: You can fetch currency rates for up to 10 days only.")
+        exit(1)
+    
+    ex_rates = await api_privat(days)
     print_currency_rates(ex_rates)
 
 
@@ -58,7 +71,7 @@ if __name__ == "__main__":
     if args.days > 10:
          print("Error: You can fetch currency rates for up to 10 days only.")
     else:
-        sample_exchange_rates(args.days)
+        asyncio.run(sample_exchange_rates(args.days))
         
         
         
